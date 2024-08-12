@@ -1,0 +1,19 @@
+# BELOW IN MASTER NODE AS ROOT USER
+kubeadm config images pull
+
+kubeadm init --pod-network-cidr=10.10.0.0/16 --apiserver-advertise-address=192.168.59.20
+
+# BELOW IN MASTER NODE AS REGULAR (kube) USER
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+
+
+wget https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+
+IFACE=$(ip a | grep 192 | rev | tr -s ' ' | cut -d' ' -f '1' | rev)
+sed -i 's/10.244.0.0/10.10.0.0/' kube-flannel.yml
+sed -i '/^.*kube-subnet/ a \        - --iface='"$IFACE"'' kube-flannel.yml
+
+kubectl apply -f kube-flannel.yml
